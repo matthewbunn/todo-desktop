@@ -22,21 +22,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx --no-install electron-builder --linux AppImage deb --publish always
-
-  # .snap — best-effort (won't block the AppImage/deb release if it fails).
-  snap:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install snapcraft (7.x — compatible with electron-builder 24)
-        run: sudo snap install snapcraft --classic --channel=7.x/stable
-      - run: npm install
-      - name: Build snap and publish
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SNAPCRAFT_BUILD_ENVIRONMENT: host   # build on the runner, no LXD/multipass
-        run: npx --no-install electron-builder --linux snap --publish always
+        # Note: snap isn't built in CI (snapcraft needs a desktop keyring that
+        # headless runners lack). Build it locally with `npm run dist:snap`.

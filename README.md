@@ -15,8 +15,10 @@ Grab a file from the [Releases](../../releases) page:
 | Format   | File                          | How to install |
 |----------|-------------------------------|----------------|
 | AppImage | `To-Do-*.AppImage`            | `chmod +x To-Do-*.AppImage` then run it. Works on any distro, no install needed. |
-| Snap     | `To-Do_*_amd64.snap`          | `sudo snap install --dangerous ./To-Do_*_amd64.snap` |
 | Deb      | `todo-desktop_*_amd64.deb`    | `sudo apt install ./todo-desktop_*_amd64.deb` |
+
+Prefer a **snap**? Build one in one command (see "Build it yourself" below) — snaps
+aren't built in CI because snapcraft needs a desktop keyring that headless runners lack.
 
 After installing, launch it and enter your server's address (e.g. `http://192.168.1.50:8090`).
 
@@ -55,7 +57,7 @@ to the [flathub/flathub](https://github.com/flathub/flathub) repo for review.
 ## Releases
 
 Pushing a tag like `v1.0.0` triggers GitHub Actions to build the Linux installers
-(AppImage, deb, snap) and attach them to a GitHub Release automatically.
+(AppImage + deb) and attach them to a GitHub Release automatically.
 
 ```bash
 npm version patch        # bumps version + creates a git tag
