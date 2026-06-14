@@ -21,7 +21,7 @@
     "productName": "To-Do",
     "files": ["main.js", "preload.js", "setup.html", "error.html"],
     "directories": { "buildResources": "build", "output": "release" },
-    "publish": { "provider": "github" },
+    "publish": { "provider": "github", "releaseType": "release" },
     "mac": {
       "target": ["dmg", "zip"],
       "category": "public.app-category.productivity",
