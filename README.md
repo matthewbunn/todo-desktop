@@ -20,7 +20,7 @@ Grab a file from the [Releases](../../releases) page:
 Prefer a **snap**? Build one in one command (see "Build it yourself" below) — snaps
 aren't built in CI because snapcraft needs a desktop keyring that headless runners lack.
 
-After installing, launch it and enter your server's address (e.g. `http://192.168.1.50:8090`).
+After installing, launch it and enter your server's address (e.g. `http://192.168.x.x:xxxx`).
 
 On a phone, use the web app directly in your browser instead (open the server URL and "Add to Home Screen").
 
