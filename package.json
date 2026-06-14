@@ -1,6 +1,6 @@
 {
   "name": "todo-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Desktop client for the self-hosted To-Do board",
   "license": "MIT",
   "author": "todo-desktop contributors",

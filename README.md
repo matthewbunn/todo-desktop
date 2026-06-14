@@ -6,7 +6,7 @@ window size, keeps you logged in, opens external links in your browser, shows
 native OS notifications for task reminders, and keeps working when the server is
 offline — your changes are stored locally and sync automatically when it's back.
 
-No server address is bundled. You enter it on first launch (e.g. `http://192.168.1.50:8090`).
+No server address is bundled. You enter it on first launch (e.g. `http://192.168.x.x:xxxx`).
 
 ## Install (Linux)
 
