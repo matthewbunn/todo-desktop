@@ -32,8 +32,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Install snapcraft
+        run: sudo snap install snapcraft --classic
       - run: npm install
       - name: Build snap and publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SNAPCRAFT_BUILD_ENVIRONMENT: host   # build on the runner, no LXD/multipass
         run: npx --no-install electron-builder --linux snap --publish always
