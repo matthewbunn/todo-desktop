@@ -8,18 +8,19 @@ offline — your changes are stored locally and sync automatically when it's bac
 
 No server address is bundled. You enter it on first launch (e.g. `http://192.168.1.50:8090`).
 
-## Install (download a build)
+## Install (Linux)
 
-Grab the file for your OS from the [Releases](../../releases) page:
+Grab a file from the [Releases](../../releases) page:
 
-| OS       | File                          | How to install |
+| Format   | File                          | How to install |
 |----------|-------------------------------|----------------|
-| macOS    | `To-Do-*.dmg`                 | Open the DMG, drag To-Do to Applications. First launch: right-click → Open (unsigned). |
-| Windows  | `To-Do-Setup-*.exe`           | Run the installer. |
-| Linux    | `To-Do-*.AppImage`            | `chmod +x To-Do-*.AppImage` then run it. Works on any distro. |
-| Linux    | `todo-desktop_*_amd64.deb`    | `sudo apt install ./todo-desktop_*_amd64.deb` |
+| AppImage | `To-Do-*.AppImage`            | `chmod +x To-Do-*.AppImage` then run it. Works on any distro, no install needed. |
+| Snap     | `To-Do_*_amd64.snap`          | `sudo snap install --dangerous ./To-Do_*_amd64.snap` |
+| Deb      | `todo-desktop_*_amd64.deb`    | `sudo apt install ./todo-desktop_*_amd64.deb` |
 
-After installing, launch it and enter your server's address.
+After installing, launch it and enter your server's address (e.g. `http://192.168.1.50:8090`).
+
+On a phone, use the web app directly in your browser instead (open the server URL and "Add to Home Screen").
 
 ## Run from source (development)
 
@@ -33,38 +34,28 @@ npm start
 ## Build it yourself
 
 ```bash
-npm run dist:mac      # macOS  -> release/*.dmg, *.zip   (build on a Mac)
-npm run dist:win      # Windows -> release/*.exe          (build on Windows)
-npm run dist:linux    # Linux  -> release/*.AppImage, *.deb, *.snap
+npm run dist          # all Linux targets -> release/*.AppImage, *.deb, *.snap
+npm run dist:appimage # just the AppImage
+npm run dist:snap     # just the snap
 ```
 
-Builds land in `release/`. macOS/Windows builds must be produced on that OS.
-Unsigned apps run fine for personal use (you click through one security prompt).
+Builds land in `release/`.
 
-### Snap
+### Snap Store / Flathub
 
-`npm run dist:linux` also produces a `.snap`. Install it directly:
-
-```bash
-sudo snap install --dangerous --classic ./release/todo-desktop_*_amd64.snap
-```
-
-To publish to the **Snap Store** (so anyone can `snap install`), you need a free
+The release `.snap` installs directly (`sudo snap install --dangerous ./release/*.snap`).
+To publish to the **Snap Store** (so anyone can `snap install todo`), you need a free
 [snapcraft](https://snapcraft.io) developer account, then `snapcraft login` and
 `snapcraft upload --release=stable ./release/*.snap`.
 
-### Flatpak / Flathub
-
-A Flatpak can be built with electron-builder's `flatpak` target (requires
-`flatpak` + `flatpak-builder` and the Freedesktop runtime installed). Publishing
-to **Flathub** is a separate process: you submit an app manifest to the
-[flathub/flathub](https://github.com/flathub/flathub) repository for review.
-For "install on any Linux machine" with no store, the **AppImage** is the simplest option.
+For **Flathub**, build a Flatpak with electron-builder's `flatpak` target (needs
+`flatpak` + `flatpak-builder` + the Freedesktop runtime) and submit an app manifest
+to the [flathub/flathub](https://github.com/flathub/flathub) repo for review.
 
 ## Releases
 
-Pushing a tag like `v1.0.0` triggers GitHub Actions to build macOS, Windows, and
-Linux installers and attach them to a GitHub Release automatically.
+Pushing a tag like `v1.0.0` triggers GitHub Actions to build the Linux installers
+(AppImage, deb, snap) and attach them to a GitHub Release automatically.
 
 ```bash
 npm version patch        # bumps version + creates a git tag

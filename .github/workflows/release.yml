@@ -6,29 +6,34 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # needed to create the GitHub Release and upload assets
+  contents: write   # create the GitHub Release and upload assets
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            args: "--mac"
-          - os: windows-latest
-            args: "--win"
-          - os: ubuntu-latest
-            args: "--linux AppImage deb"
-    runs-on: ${{ matrix.os }}
+  # AppImage + .deb — the always-reliable Linux installers.
+  linux:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm install
-      - name: Build and publish
+      - name: Build AppImage + deb and publish
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"   # don't attempt macOS code-signing in CI
-        run: npx --no-install electron-builder ${{ matrix.args }} --publish always
+        run: npx --no-install electron-builder --linux AppImage deb --publish always
+
+  # .snap — best-effort (won't block the AppImage/deb release if it fails).
+  snap:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - name: Build snap and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx --no-install electron-builder --linux snap --publish always
