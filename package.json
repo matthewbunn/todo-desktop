@@ -1,6 +1,6 @@
 {
   "name": "todo-desktop",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Desktop client for the self-hosted To-Do board",
   "license": "MIT",
   "author": "todo-desktop contributors",
@@ -19,7 +19,7 @@
   "build": {
     "appId": "com.todoapp.desktop",
     "productName": "To-Do",
-    "files": ["main.js", "preload.js", "setup.html", "error.html"],
+    "files": ["main.js", "preload.js", "setup.html", "error.html", "icon.png"],
     "directories": { "buildResources": "build", "output": "release" },
     "publish": { "provider": "github", "releaseType": "release" },
     "linux": {
@@ -27,7 +27,8 @@
       "category": "Utility",
       "icon": "build/icon.png",
       "maintainer": "todo-desktop contributors",
-      "synopsis": "Desktop client for the self-hosted To-Do board"
+      "synopsis": "Desktop client for the self-hosted To-Do board",
+      "desktop": { "StartupWMClass": "To-Do" }
     }
   }
 }

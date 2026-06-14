@@ -118,6 +118,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: b.width, height: b.height, x: b.x, y: b.y,
     minWidth: 380, minHeight: 480, backgroundColor: "#16181d", title: "To-Do",
+    icon: path.join(__dirname, "icon.png"),   // window/taskbar icon (esp. Linux)
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, spellcheck: true },
   });
   loadApp();
