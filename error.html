@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>To-Do — Offline</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin:0; height:100vh; display:flex; align-items:center; justify-content:center;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:#16181d; color:#e4e6eb; text-align:center; }
+  .box { width:360px; max-width:88vw; }
+  h1 { font-size:1.1rem; margin:0 0 .4rem; }
+  p { color:#8a919c; font-size:.88rem; margin:.2rem 0 1.2rem; }
+  button { border:0; border-radius:8px; background:#4a7dff; color:#fff; padding:.6rem 1.2rem;
+    font:inherit; cursor:pointer; margin:0 .3rem; }
+  button.ghost { background:#262b33; color:#e4e6eb; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>Can't reach your server</h1>
+    <p>The To-Do server didn't respond. Your offline changes are saved and will sync when it's reachable again. Check that the server is running and you're on the same network.</p>
+    <button id="retry">Retry</button>
+    <button class="ghost" id="change">Change URL</button>
+  </div>
+<script>
+  document.getElementById("retry").onclick = () => window.todo.retry();
+  document.getElementById("change").onclick = async () => {
+    // saving an empty value is rejected; instead just reload setup via retry after clearing is not exposed,
+    // so we route through retry which reloads target; use the menu (File > Change Server URL) to edit.
+    location.href = "setup.html";
+  };
+</script>
+</body>
+</html>
