@@ -32,8 +32,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install snapcraft
-        run: sudo snap install snapcraft --classic
+      - name: Install snapcraft (7.x — compatible with electron-builder 24)
+        run: sudo snap install snapcraft --classic --channel=7.x/stable
       - run: npm install
       - name: Build snap and publish
         env:
