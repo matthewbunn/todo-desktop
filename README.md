@@ -30,7 +30,14 @@ dependencies, recurring tasks, analytics, and selectable **themes**.
 ![Task detail](docs/task-detail.png)
 ![Calendar](docs/calendar.png)
 ![Analytics](docs/analytics.png)
-![Midnight theme](docs/board-midnight.png)
+
+A few of the built-in themes (Settings → Appearance):
+
+| Light | Nord |
+|:-----:|:----:|
+| ![Light theme](docs/theme-light.png) | ![Nord theme](docs/theme-nord.png) |
+| **Midnight** | **Grape** |
+| ![Midnight theme](docs/board-midnight.png) | ![Grape theme](docs/theme-grape.png) |
 
 ### 🪟 Native niceties
 Remembers your window size and server URL, keeps you logged in, opens external
