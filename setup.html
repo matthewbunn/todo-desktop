@@ -27,8 +27,9 @@
     <p>Enter the address where your board is running.</p>
     <div class="err" id="err"></div>
     <input id="url" placeholder="http://192.168.x.x:xxxx" autofocus>
-    <button id="go">Connect</button>
-    <div class="hint">Use your server's address on your network, e.g. <code>http://192.168.x.x:xxxx</code></div>
+    <button id="go">Save &amp; sync</button>
+    <button id="local" style="background:#262b33;margin-top:.5rem">Use locally only</button>
+    <div class="hint">Optional. Your board already works on this device — add a server only to sync across devices, e.g. <code>http://192.168.x.x:xxxx</code>. Leave blank and choose "Use locally only" to keep everything on this machine.</div>
   </div>
 <script>
   (async () => {
@@ -41,6 +42,7 @@
     if (!res.ok) document.getElementById("err").textContent = res.error || "Could not save";
   }
   document.getElementById("go").onclick = connect;
+  document.getElementById("local").onclick = async () => { await window.todo.saveServerUrl(""); };
   document.getElementById("url").addEventListener("keydown", (e) => { if (e.key === "Enter") connect(); });
 </script>
 </body>

@@ -1,12 +1,13 @@
-// To-Do desktop app — a native shell around the self-hosted web UI.
+// To-Do desktop app — a native, self-contained local-first client.
 //
-// Offline-first: the UI is cached locally and served over a stable custom scheme
-// (todoapp://), so the app opens and works even when the server is unreachable.
-// The page talks to the server's REST API at the configured address; when that's
-// down, the in-page layer stores changes locally and syncs them when it returns.
+// The full web UI is BUNDLED inside this app (ui/app.html) and served over a
+// stable custom scheme (todoapp://), so the app opens and works with no server
+// at all — your board lives locally and is operated locally. When you point it
+// at a server (optional), the in-page layer syncs your local changes to the
+// server's REST API whenever it's reachable. UI updates ship with the app via
+// the built-in auto-updater — they no longer require updating the server.
 // Also shows native OS notifications for task reminders.
-// No server address is bundled — you enter it on first launch.
-const { app, BrowserWindow, Menu, shell, ipcMain, protocol, Notification } = require("electron");
+const { app, BrowserWindow, Menu, shell, ipcMain, protocol, Notification, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const http = require("http");
@@ -14,12 +15,16 @@ const https = require("https");
 
 app.setName("To-Do");
 
+// Auto-update (packaged builds only; AppImage self-updates, deb/snap just notify).
+let autoUpdater = null;
+try { ({ autoUpdater } = require("electron-updater")); } catch (e) { /* dev mode */ }
+
 protocol.registerSchemesAsPrivileged([
-  { scheme: "todoapp", privileges: { standard: true, secure: false, supportFetchAPI: true, corsEnabled: true, stream: true } },
+  { scheme: "todoapp", privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
 ]);
 
 const CONFIG_PATH = () => path.join(app.getPath("userData"), "config.json");
-const SHELL_PATH = () => path.join(app.getPath("userData"), "shell.html");
+const UI_PATH = () => path.join(__dirname, "ui", "app.html");
 
 function loadConfig() { try { return JSON.parse(fs.readFileSync(CONFIG_PATH(), "utf8")); } catch { return {}; } }
 function saveConfig(cfg) {
@@ -31,7 +36,7 @@ let win;
 let config = loadConfig();
 if (!config.seenReminders) config.seenReminders = {};
 
-// ---- networking helpers (main process) ----
+// ---- networking helpers (main process, for reminder polling only) ----
 function fetchText(u, timeoutMs = 6000) {
   return new Promise((resolve) => {
     let lib;
@@ -49,27 +54,25 @@ function fetchText(u, timeoutMs = 6000) {
 }
 async function fetchJson(u) { const t = await fetchText(u); if (!t) return null; try { return JSON.parse(t); } catch { return null; } }
 
-// ---- offline-capable local shell ----
+// ---- bundled UI shell ----
+// Inject the configured server URL (empty string = pure-local mode) so the
+// in-page data layer knows where to sync. With no server, the page's relative
+// API calls hit todoapp:// and fail fast (Response.error below) -> offline-first.
 function injectBase(html, serverUrl) {
-  const tag = `<script>window.__API_BASE__=${JSON.stringify(serverUrl)};</script>`;
+  const tag = `<script>window.__API_BASE__=${JSON.stringify(serverUrl || "")};</script>`;
   if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => m + tag);
   return tag + html;
 }
-async function ensureShell() {
-  if (config.serverUrl) {
-    const html = await fetchText(config.serverUrl.replace(/\/+$/, "") + "/");
-    if (html && /<\/html>/i.test(html)) { try { fs.writeFileSync(SHELL_PATH(), injectBase(html, config.serverUrl)); } catch (e) {} }
-  }
-  return fs.existsSync(SHELL_PATH());
+function readUI() {
+  try { return fs.readFileSync(UI_PATH(), "utf8"); }
+  catch (e) { return "<!doctype html><meta charset=utf-8><body style='font-family:sans-serif;padding:2rem'>Bundled UI missing.</body>"; }
 }
-async function loadApp() {
-  if (!config.serverUrl) { win.loadFile(path.join(__dirname, "setup.html")); return; }
-  const ready = await ensureShell();
-  if (ready) win.loadURL("todoapp://app/");
-  else win.loadFile(path.join(__dirname, "error.html"));
+function loadApp() {
+  // Always open the bundled board — works with or without a server configured.
+  win.loadURL("todoapp://app/");
 }
 
-// ---- native reminder notifications ----
+// ---- native reminder notifications (only when a server is configured) ----
 function utcNow() { return new Date().toISOString().slice(0, 19).replace("T", " "); }
 function utcMinus(hours) { return new Date(Date.now() - hours * 3600e3).toISOString().slice(0, 19).replace("T", " "); }
 
@@ -112,6 +115,43 @@ function startReminderWatcher() {
   reminderTimer = setInterval(checkReminders, 60000);
 }
 
+// ---- auto-update (packaged builds; AppImage self-updates, deb/snap notify) ----
+function setupAutoUpdate() {
+  if (!autoUpdater || !app.isPackaged) return;
+  autoUpdater.autoDownload = true;
+  autoUpdater.on("update-downloaded", (info) => {
+    if (!win) return;
+    dialog.showMessageBox(win, {
+      type: "info", buttons: ["Restart now", "Later"], defaultId: 0, cancelId: 1,
+      title: "Update ready",
+      message: `To-Do ${info.version} has been downloaded.`,
+      detail: "Restart to finish installing the update.",
+    }).then((r) => { if (r.response === 0) autoUpdater.quitAndInstall(); });
+  });
+  autoUpdater.on("error", (e) => console.error("update error", e));
+  autoUpdater.checkForUpdatesAndNotify().catch(() => {});            // on launch
+  setInterval(() => autoUpdater.checkForUpdatesAndNotify().catch(() => {}), 6 * 3600e3);  // and every 6h
+}
+async function checkForUpdatesInteractive() {
+  if (!autoUpdater || !app.isPackaged) {
+    dialog.showMessageBox(win, { type: "info", message: "Updates apply to installed builds only.",
+      detail: "Running from source uses your local code." });
+    return;
+  }
+  try {
+    const r = await autoUpdater.checkForUpdates();
+    const v = r && r.updateInfo && r.updateInfo.version;
+    if (v && v !== app.getVersion()) {
+      dialog.showMessageBox(win, { type: "info", message: `Update available: ${v}`,
+        detail: "Downloading in the background; you'll be prompted to restart when it's ready." });
+    } else {
+      dialog.showMessageBox(win, { type: "info", message: "You're up to date.", detail: `Version ${app.getVersion()}` });
+    }
+  } catch (e) {
+    dialog.showMessageBox(win, { type: "warning", message: "Couldn't check for updates.", detail: String((e && e.message) || e) });
+  }
+}
+
 // ---- window ----
 function createWindow() {
   const b = config.bounds || { width: 1200, height: 820 };
@@ -138,19 +178,20 @@ function showSetup() { if (win) win.loadFile(path.join(__dirname, "setup.html"))
 ipcMain.handle("get-server-url", () => config.serverUrl || "");
 ipcMain.handle("save-server-url", async (_e, url) => {
   url = String(url || "").trim().replace(/\/+$/, "");
-  if (!/^https?:\/\//i.test(url)) return { ok: false, error: "Enter a full http(s):// URL" };
-  config.serverUrl = url; saveConfig(config);
-  await loadApp(); startReminderWatcher();
+  if (url && !/^https?:\/\//i.test(url)) return { ok: false, error: "Enter a full http(s):// URL" };
+  config.serverUrl = url; saveConfig(config);   // empty url is allowed = pure-local mode
+  loadApp(); startReminderWatcher();
   return { ok: true };
 });
-ipcMain.handle("retry", async () => { await loadApp(); return true; });
+ipcMain.handle("retry", async () => { loadApp(); return true; });
 
 function buildMenu() {
   const isMac = process.platform === "darwin";
   const template = [
     ...(isMac ? [{ role: "appMenu" }] : []),
     { label: "File", submenu: [
-      { label: "Change Server URL…", accelerator: "CmdOrCtrl+,", click: showSetup },
+      { label: "Sync Server…", accelerator: "CmdOrCtrl+,", click: showSetup },
+      { label: "Check for Updates…", click: checkForUpdatesInteractive },
       { type: "separator" },
       isMac ? { role: "close" } : { role: "quit" },
     ] },
@@ -167,17 +208,20 @@ function buildMenu() {
 }
 
 app.whenReady().then(() => {
-  protocol.handle("todoapp", () => {
-    try {
-      const html = fs.readFileSync(SHELL_PATH(), "utf8");
+  protocol.handle("todoapp", (req) => {
+    const { pathname } = new URL(req.url);
+    if (pathname === "/" || pathname === "" || pathname === "/index.html") {
+      const html = injectBase(readUI(), config.serverUrl || "");
       return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
-    } catch {
-      return new Response("Shell not cached yet — connect to the server once.", { status: 404 });
     }
+    // Relative /api/* and /healthz only reach here in pure-local mode (no server
+    // configured); fail like a real network error so the page goes local-first.
+    return Response.error();
   });
   buildMenu();
   createWindow();
   startReminderWatcher();
+  setupAutoUpdate();
   app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 

@@ -1,7 +1,7 @@
 {
   "name": "todo-desktop",
-  "version": "1.0.2",
-  "description": "Desktop client for the self-hosted To-Do board",
+  "version": "1.1.0",
+  "description": "Self-contained local-first desktop client for the To-Do board",
   "license": "MIT",
   "author": "todo-desktop contributors",
   "main": "main.js",
@@ -12,14 +12,20 @@
     "dist:deb": "electron-builder --linux deb",
     "dist:snap": "electron-builder --linux snap"
   },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
   "devDependencies": {
-    "electron": "^31.7.7",
-    "electron-builder": "^24.13.3"
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "overrides": {
+    "tar": ">=7.5.16"
   },
   "build": {
     "appId": "com.todoapp.desktop",
     "productName": "To-Do",
-    "files": ["main.js", "preload.js", "setup.html", "error.html", "icon.png"],
+    "files": ["main.js", "preload.js", "setup.html", "error.html", "icon.png", "ui/**/*"],
     "directories": { "buildResources": "build", "output": "release" },
     "publish": { "provider": "github", "releaseType": "release" },
     "linux": {
@@ -27,7 +33,7 @@
       "category": "Utility",
       "icon": "build/icon.png",
       "maintainer": "todo-desktop contributors",
-      "synopsis": "Desktop client for the self-hosted To-Do board",
+      "synopsis": "Self-contained local-first desktop client for the To-Do board",
       "desktop": { "StartupWMClass": "To-Do" }
     }
   }
