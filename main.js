@@ -116,10 +116,26 @@ function startReminderWatcher() {
 }
 
 // ---- auto-update (packaged builds; AppImage self-updates, deb/snap notify) ----
+let updateBusy = false;
+// Visible "working…" feedback: a taskbar progress bar (determinate while
+// downloading), a window-title status line, and an optional menu-label tick.
+function setUpdateStatus(text, fraction) {
+  try {
+    if (!win) return;
+    if (typeof fraction === "number") win.setProgressBar(Math.max(0, Math.min(1, fraction)));
+    else if (text) win.setProgressBar(0.0, { mode: "indeterminate" });   // shown where the OS supports it
+    else win.setProgressBar(-1);                                          // clear
+    win.setTitle(text ? "To-Do — " + text : "To-Do");
+  } catch (e) {}
+}
+function notifyUser(body) { try { if (Notification.isSupported()) new Notification({ title: "To-Do", body, silent: true }).show(); } catch (e) {} }
+
 function setupAutoUpdate() {
   if (!autoUpdater || !app.isPackaged) return;
   autoUpdater.autoDownload = true;
+  autoUpdater.on("download-progress", (p) => setUpdateStatus("Downloading update… " + Math.round(p.percent || 0) + "%", (p.percent || 0) / 100));
   autoUpdater.on("update-downloaded", (info) => {
+    setUpdateStatus(null);
     if (!win) return;
     dialog.showMessageBox(win, {
       type: "info", buttons: ["Restart now", "Later"], defaultId: 0, cancelId: 1,
@@ -128,7 +144,8 @@ function setupAutoUpdate() {
       detail: "Restart to finish installing the update.",
     }).then((r) => { if (r.response === 0) autoUpdater.quitAndInstall(); });
   });
-  autoUpdater.on("error", (e) => console.error("update error", e));
+  autoUpdater.on("update-not-available", () => setUpdateStatus(null));
+  autoUpdater.on("error", (e) => { setUpdateStatus(null); console.error("update error", e); });
   autoUpdater.checkForUpdatesAndNotify().catch(() => {});            // on launch
   setInterval(() => autoUpdater.checkForUpdatesAndNotify().catch(() => {}), 6 * 3600e3);  // and every 6h
 }
@@ -138,17 +155,26 @@ async function checkForUpdatesInteractive() {
       detail: "Running from source uses your local code." });
     return;
   }
+  if (updateBusy) { notifyUser("Already checking for updates…"); return; }
+  updateBusy = true;
+  setUpdateStatus("Checking for updates…");   // immediate "working" feedback
+  notifyUser("Checking for updates…");
   try {
     const r = await autoUpdater.checkForUpdates();
     const v = r && r.updateInfo && r.updateInfo.version;
     if (v && v !== app.getVersion()) {
+      // leave the progress indicator running; download-progress + update-downloaded drive it
       dialog.showMessageBox(win, { type: "info", message: `Update available: ${v}`,
-        detail: "Downloading in the background; you'll be prompted to restart when it's ready." });
+        detail: "Downloading now — the taskbar and window title show progress, and you'll be prompted to restart when it's ready." });
     } else {
+      setUpdateStatus(null);
       dialog.showMessageBox(win, { type: "info", message: "You're up to date.", detail: `Version ${app.getVersion()}` });
     }
   } catch (e) {
+    setUpdateStatus(null);
     dialog.showMessageBox(win, { type: "warning", message: "Couldn't check for updates.", detail: String((e && e.message) || e) });
+  } finally {
+    updateBusy = false;
   }
 }
 
